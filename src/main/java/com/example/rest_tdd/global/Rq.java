@@ -15,6 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @RequestScope
 public class Rq {
+
     private final HttpServletRequest request;
     private final MemberService memberService;
 
@@ -24,10 +25,11 @@ public class Rq {
         String apiKey = authorizationValue.substring("Bearer ".length());
         Optional<Member> opActor = memberService.findByApiKey(apiKey);
 
-        if (opActor.isEmpty()) {
-            throw new ServiceException("401-1", "잘못된 비밀번호 입니다.");
+        if(opActor.isEmpty()) {
+            throw new ServiceException("401-1", "잘못된 인증키입니다.");
         }
 
         return opActor.get();
+
     }
 }

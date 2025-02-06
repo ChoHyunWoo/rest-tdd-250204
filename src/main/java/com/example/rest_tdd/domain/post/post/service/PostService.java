@@ -4,6 +4,8 @@ import com.example.rest_tdd.domain.member.member.entity.Member;
 import com.example.rest_tdd.domain.post.post.entity.Post;
 import com.example.rest_tdd.domain.post.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +15,19 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class PostService {
+
     private final PostRepository postRepository;
 
-    public Post write(Member author, String title, String content) {
+    public Post write(Member author, String title, String content, boolean published, boolean listed) {
+
         return postRepository.save(
                 Post
                         .builder()
                         .author(author)
                         .title(title)
                         .content(content)
+                        .published(published)
+                        .listed(listed)
                         .build()
         );
     }
@@ -47,8 +53,33 @@ public class PostService {
         post.setTitle(title);
         post.setContent(content);
     }
+
     public void flush() {
         postRepository.flush();
     }
 
+    public Optional<Post> getLatestItem() {
+        return postRepository.findTopByOrderByIdDesc();
+    }
+
+    public Page<Post> getListedItems(int page, int pageSize, String keywordType, String keyword) {
+        PageRequest pageRequest = PageRequest.of(page - 1, pageSize);
+
+        String likeKeyword = "%" + keyword + "%";
+
+        if(keywordType.equals("content")) {
+            return postRepository.findByListedAndContentLike(true, likeKeyword, pageRequest);
+        }
+
+
+        return postRepository.findByListedAndTitleLike(true, likeKeyword, pageRequest);
+    }
+    public Page<Post> getMines(Member author, int page, int pageSize, String keywordType, String keyword) {
+        PageRequest pageRequest = PageRequest.of(page - 1, pageSize);
+        String likeKeyword = "%" + keyword + "%";
+        if(keywordType.equals("content")) {
+            return postRepository.findByAuthorAndContentLike(author, likeKeyword, pageRequest);
+        }
+        return postRepository.findByAuthorAndTitleLike(author, likeKeyword, pageRequest);
+    }
 }

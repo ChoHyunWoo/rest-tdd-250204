@@ -1,6 +1,9 @@
 package com.example.rest_tdd;
 
-import com.example.rest_tdd.domain.member.member.controller.ApiV1MemberController;
+import com.example.rest_tdd.domain.post.comment.controller.ApiV1CommentController;
+import com.example.rest_tdd.domain.post.comment.entity.Comment;
+import com.example.rest_tdd.domain.post.post.entity.Post;
+import com.example.rest_tdd.domain.post.post.service.PostService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,35 +25,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Transactional
-class RestTddApplicationTests {
+public class ApiV1CommentControllerTest {
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private PostService postService;
 
     @Test
-    @DisplayName("회원 가입")
-    void join() throws Exception {
+    @DisplayName("댓글 작성")
+    void write() throws Exception {
+        long postId = 1;
+        String apiKey = "user1";
+        String content = "댓글 내용";
         ResultActions resultActions = mvc
                 .perform(
-                        post("/api/v1/members/join")
+                        post("/api/v1/posts/%d/comments".formatted(postId))
+                                .header("Authorization", "Bearer " + apiKey)
                                 .content("""
                                         {
-                                            "username": "usernew",
-                                            "password": "1234",
-                                            "nickname": "무명"
+                                            "content": "%s"
                                         }
-                                        """.stripIndent())
+                                        """
+                                        .formatted(content)
+                                        .stripIndent())
                                 .contentType(
                                         new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8)
                                 )
                 )
                 .andDo(print());
+        Post post = postService.getItem(postId).get();
+        Comment comment = post.getLatestComment();
         resultActions
                 .andExpect(status().isCreated())
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("join"))
+                .andExpect(handler().handlerType(ApiV1CommentController.class))
+                .andExpect(handler().methodName("write"))
                 .andExpect(jsonPath("$.code").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."));
+                .andExpect(jsonPath("$.msg").value("%d번 댓글 작성이 완료되었습니다.".formatted(comment.getId())));
     }
-
 }
